@@ -1,0 +1,32 @@
+# https://docs.min.io/docs/deploy-minio-on-docker-compose.html
+version: "3.7"
+
+services:
+  logo-server:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:7000"
+    hostname: logo-server
+    networks:
+      - logo_nw
+
+  nginx:
+    image: nginx:latest
+    hostname: nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./var/live/logo-server.mediumroast.io/fullchain.pem:/etc/nginx/certs/fullchain.pem:ro
+      - ./var/live/logo-server.mediumroast.io/privkey.pem:/etc/nginx/certs/privkey.pem:ro
+    ports:
+      - "7000:7000"
+    depends_on:
+      - logo-server 
+    networks:
+      - logo_nw
+
+networks:
+  logo_nw:
+    driver: bridge
+
