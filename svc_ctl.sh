@@ -14,6 +14,7 @@
 # Service specific variables
 SERVICE_NAME="logo-server.mediumroast.io"
 HELLO_EMAIL="hello@mediumroast.io"
+IMAGE_NAME="chart-server_chart-server"
 
 # Colors
 NC='\033[0m'
@@ -115,6 +116,39 @@ function start_server () {
     print_footer $FUNC
 }
 
+function build_server () {
+    FUNC="Building ${SERVICE}"
+    STEP="build_server"
+    print_header $FUNC
+
+	print_step "Build ${SERVICE}"
+        docker-compose build
+
+    print_footer $FUNC
+}
+
+function run_foreground () {
+    FUNC="Running ${SERVICE} in the foreground"
+    STEP="run_foreground"
+    print_header $FUNC
+
+	print_step "Running ${SERVICE}"
+        docker-compose up
+
+    print_footer $FUNC
+}
+
+function tail_backend () {
+    FUNC="Tail the backend log file"
+    STEP="tail_backend"
+    print_header $FUNC
+
+    print_step "Tailing the docker image for ${SERVICE}\n"
+        docker_image=`docker ps |grep ${IMAGE_NAME} |awk '{print $1}'`
+        echo "'${docker_image}'"
+        docker logs -f ${docker_image}
+}
+
 ###################################
 ###
 ### Service specific functions
@@ -123,7 +157,7 @@ function start_server () {
 
 
 function create_cert () {
-    certbot --agree-tos -d ${SERVICE_NAME} -m ${HELLO_EMAIL} --manual --preferred-challenges dns certonly --config-dir=./var --work-dir=./var --logs-dir=./var
+    certbot --agree-tos -d ${SERVICE_NAME} -m ${HELLO_EMAIL} --manual --preferred-challenges dns certonly --config-dir=./var --work-dir=./var --logs-dir=./var --no-eff-email
 }
 
 function print_help () {
@@ -135,13 +169,18 @@ function print_help () {
     echo "    Control functions to run ${SERVICE} to demo/develop for the mediumroast.io."
     echo ""
     echo "COMMANDS:"
-    echo "    help all up down start stop create_user delete_user set_user_policy clean"
+    echo "    help up down start stop cert build foreground tail"
     echo ""
     echo "    help - call up this help text"
     echo "    up - bring up the service including building and pulling the docker image"
     echo "    down - bring down the service and remove the docker image"
     echo "    start - start the service using docker-compose "
     echo "    stop - stop the docker service"
+    echo "    cert - create a new TLS certificate which lasts for 90 days"
+    echo "    build - build the docker images for the server"
+    echo "    foreground - run the server in the foreground to watch for output"
+    echo "    tail - tail the logs for a server running in the background"
+    echo ""
     exit -1
 }
 
@@ -156,7 +195,6 @@ if [ ! $1 ] || [ $1 == "help" ]; then
     print_help
 
 elif [ $1 == "up" ]; then
-    create_cert
     bring_up_server
 
 elif [ $1 == "down" ]; then
@@ -170,6 +208,18 @@ elif [ $1 == "start" ]; then
 
 elif [ $1 == "stop" ]; then
     stop_server
+
+elif [ $1 == "cert" ]; then
+    create_cert
+
+elif [ $1 == "build" ]; then
+    build_server
+
+elif [ $1 == "foreground" ]; then
+    run_foreground
+
+elif [ $1 == "tail" ]; then
+    tail_backend
 
 fi
 
